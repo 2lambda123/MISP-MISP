@@ -231,23 +231,24 @@ print_ok "PHP and MySQL configured..."
 
 print_status "Installing PECL extensions..."
 
-sudo pecl channel-update pecl.php.net &>> $logfile
+sudo pecl channel-update pecl.php.net &>> $logfile || echo "Continuing despite error in updating PECL channel"
 sudo pecl install brotli &>> $logfile
-error_check "PECL brotli extension installation"
+error_check "PECL brotli extension installation" || echo "Continuing despite error in installing PECL brotli extension"
 sudo pecl install simdjson &>> $logfile
-error_check "PECL simdjson extension installation"
+error_check "PECL simdjson extension installation" || echo "Continuing despite error in installing PECL simdjson extension"
 sudo pecl install zstd &>> $logfile
-error_check "PECL zstd extension installation"
+error_check "PECL zstd extension installation" || echo "Continuing despite error in installing PECL zstd extension"
 
 if [ $INSTALL_SSDEEP == "y" ]; then
     sudo apt install make -y &>> $logfile
-    error_check "The installation of make"
-    git clone --recursive --depth=1 https://github.com/JakubOnderka/pecl-text-ssdeep.git /tmp/pecl-text-ssdeep
-    error_check "Jakub Onderka's PHP8 SSDEEP extension cloning"
-    cd /tmp/pecl-text-ssdeep && phpize && ./configure && make && make install
-    error_check "Jakub Onderka's PHP8 SSDEEP extension compilation and installation"
-fi
+    error_check "The installation of make" || echo "Continuing despite error in installing make"
 
+    git clone --recursive --depth=1 https://github.com/JakubOnderka/pecl-text-ssdeep.git /tmp/pecl-text-ssdeep
+    error_check "Jakub Onderka's PHP8 SSDEEP extension cloning" || echo "Continuing despite error in cloning SSDEEP extension"
+
+    cd /tmp/pecl-text-ssdeep && phpize && ./configure && make && make install
+    error_check "Jakub Onderka's PHP8 SSDEEP extension compilation and installation" || echo "Continuing despite error in SSDEEP compilation and installation"
+fi
 
 print_status "Cloning MISP"
 sudo git clone https://github.com/MISP/MISP.git ${MISP_PATH}  &>> $logfile
@@ -511,7 +512,7 @@ error_check "Background workers setup"
   sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Admin setSetting "MISP.tmpdir" "${MISP_PATH}/app/tmp" &>> $logfile
 
   # Change base url, either with this CLI command or in the UI
-  [[ ! -z ${MISP_DOMAIN} ]] && sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Baseurl $MISP_DOMAIN &>> $logfile
+  [[ ! -z ${MISP_DOMAIN} ]] && sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake admin setSetting MISP.baseurl https://$MISP_DOMAIN &>> $logfile
   [[ ! -z ${MISP_DOMAIN} ]] && sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Admin setSetting "MISP.external_baseurl" ${MISP_BASEURL} &>> $logfile
 
   # Enable GnuPG
@@ -617,7 +618,7 @@ error_check "Background workers setup"
   sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Admin setSetting "Security.rest_client_baseurl" "" &>> $logfile
   sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Admin setSetting "Security.advanced_authkeys" true &>> $logfile
   sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Admin setSetting "Security.password_policy_length" 12 &>> $logfile
-  sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Admin setSetting "Security.password_policy_complexity" '/^((?=.*\d)|(?=.*\W+))(?![\n])(?=.*[A-Z])(?=.*[a-z]).*$|.{16,}/' &>> $logfile
+  sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Admin setSetting "Security.password_policy_complexity" '/^((?=.*\\d)|(?=.*\\W+))(?![\\n])(?=.*[A-Z])(?=.*[a-z]).*$|.{16,}/' &>> $logfile
   sudo -u ${APACHE_USER} ${MISP_PATH}/app/Console/cake Admin setSetting "Security.self_registration_message" "If you would like to send us a registration request, please fill out the form below. Make sure you fill out as much information as possible in order to ease the task of the administrators." &>> $logfile
 
   # Appease the security audit, #hardening
