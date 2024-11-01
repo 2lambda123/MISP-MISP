@@ -30,11 +30,10 @@ class JsonTool
                 $result = simdjson_decode($value, true);
 
                 // simdjson do not deallocate memory automatically, but instead it keeps memory allocated for later usage
-                // this is problematic for long running scripts, so we will deallocate memory if simdjson took more than 100 MB
-                if (function_exists('simdjson_capacity')) {
-                    if (simdjson_capacity() > 1024 * 1024 * 100) {
-                        simdjson_cleanup();
-                    }
+                // this is problematic for long running scripts, so we will deallocate memory if simdjson parsed JSON
+                // bigger than 100 MB
+                if (strlen($value) > 1024 * 1024 * 100 && function_exists('simdjson_cleanup')) {
+                    simdjson_cleanup();
                 }
 
                 return $result;
@@ -89,7 +88,7 @@ class JsonTool
      */
     public static function escapeNonUnicode($string)
     {
-        if (mb_check_encoding($string, 'UTF-8')) {
+        if ((function_exists('simdjson_is_valid_utf8') && simdjson_is_valid_utf8($string)) || mb_check_encoding($string, 'UTF-8')) {
             return $string; // string is valid unicode
         }
 
@@ -99,11 +98,11 @@ class JsonTool
     /**
      * Convert all integers in array or object to strings. Useful for php7.4 to php8 migration
      * @param mixed $data
-     * @return mixed
      */
-    public static function convertIntegersToStrings(&$data) {
+    public static function convertIntegersToStrings(&$data)
+    {
         if (is_array($data)) {
-            foreach ($data as $key => &$value) {
+            foreach ($data as &$value) {
                 if (is_int($value)) {
                     $value = strval($value);
                 } elseif (is_array($value) || is_object($value)) {
