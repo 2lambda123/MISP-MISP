@@ -5971,6 +5971,7 @@ class EventsController extends AppController
                 'modules' => $modules
             ));
             if ($this->_isRest()) {
+                return $this->RestResponse->successResponse($id, 'enrichEvent', $result);
             } else {
                 if ($result === true) {
                     $result = __('Enrichment task queued for background processing. Check back later to see the results.');
