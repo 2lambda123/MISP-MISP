@@ -168,7 +168,7 @@ def save_current_sync_timestamp() -> None:
 def get_last_sync_timestamp() -> Union[int, None]:
     try:
         with open(last_timestamp_path, 'r') as f:
-            last_timestamp = int(f.readline())
+            last_timestamp = int(f.readline(5_000_000))
     except Exception:
         return None
     return last_timestamp
